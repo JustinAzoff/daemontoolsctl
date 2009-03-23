@@ -1,0 +1,147 @@
+#!/usr/bin/env python
+
+import cmd
+import fnmatch
+import os
+import subprocess
+import sys
+import time
+
+def svstat(d, s):
+    path = os.path.join(d,s)
+    return subprocess.Popen(['svstat', path]).wait()
+
+def svc(d, s, opt):
+    path = os.path.join(d,s)
+    opt = opt_mapping[opt] 
+    return subprocess.Popen(['svc', opt, path]).wait()
+
+opt_mapping = {
+    'start':    '-u',
+    'stop':     '-d',
+    'once':     '-o',
+    'pause':    '-p',
+    'continue': '-c',
+    'hangup':   '-h',
+    'alarm':    '-a',
+    'interrupt':'-i',
+    'terminate':'-t',
+    'kill':     '-k',
+}
+
+class daemontoolsctl(cmd.Cmd):
+    prompt = 'daemontoolsctl> '
+
+    def __init__(self, dirs):
+        cmd.Cmd.__init__(self)
+        self.dirs = dirs
+
+    def get_services(self, pattern=None):
+        if pattern and '*' not in pattern:
+            pattern += '*'
+
+        ret = []
+        for d in self.dirs:
+            for s in os.listdir(d):
+                if not pattern or fnmatch.fnmatch(s, pattern):
+                    ret.append((d, s))
+        return ret
+
+    def complete_service(self, text, line, begidx, endidx):
+        #print ">%s< >%s< >%s< >%s<" % (text, line, begidx, endidx)
+        return [s for (d,s) in self.get_services(text)]
+
+    complete_status = complete_service
+        
+
+    def do_status(self, line):
+        """Usage: status <services>"""
+        if line:
+            for l in line.split():
+                services = self.get_services(l)
+                for d,s in services:
+                    svstat(d, s)
+        else:
+            services = self.get_services()
+            for d,s in services:
+                svstat(d, s)
+
+    def svc_helper(self, line, opt):
+        if not line.strip():
+            return
+        for l in line.split():
+            services = self.get_services(l)
+            for d,s in services:
+                print "sending %s to %s" % (opt, s)
+                svc(d, s, opt)
+        self.do_status(line)
+
+    def do_start(self, line):
+        """Usage: start <services>"""
+        self.svc_helper(line, 'start')
+        
+    def do_stop(self, line):
+        """Usage: stop <services>"""
+        self.svc_helper(line, 'stop')
+
+    def do_restart(self, line):
+        """Usage: restart <services>"""
+        if not line.strip():
+            return
+
+        self.svc_helper(line, 'stop')
+        time.sleep(1)
+        self.svc_helper(line, 'kill')
+        time.sleep(1)
+        self.svc_helper(line, 'start')
+
+#def gen():
+#    for k in opt_mapping:
+#        print 'def do_%s(self, line):' %k
+#        print '    """Usage: %s <services>"""' % k
+#        print "    self.svc_helper(line, '%s')"  % k
+#        print
+
+
+    def do_once(self, line):
+        """Usage: once <services>"""
+        self.svc_helper(line, 'once')
+
+    def do_pause(self, line):
+        """Usage: pause <services>"""
+        self.svc_helper(line, 'pause')
+
+    def do_continue(self, line):
+        """Usage: continue <services>"""
+        self.svc_helper(line, 'continue')
+
+    def do_hangup(self, line):
+        """Usage: hangup <services>"""
+        self.svc_helper(line, 'hangup')
+
+    def do_alarm(self, line):
+        """Usage: alarm <services>"""
+        self.svc_helper(line, 'alarm')
+
+    def do_interrupt(self, line):
+        """Usage: interrupt <services>"""
+        self.svc_helper(line, 'interrupt')
+
+    def do_terminate(self, line):
+        """Usage: terminate <services>"""
+        self.svc_helper(line, 'terminate')
+
+    def do_kill(self, line):
+        """Usage: kill <services>"""
+        self.svc_helper(line, 'kill')
+
+    def do_EOF(self, x):
+        sys.exit(0)
+        
+if __name__ == "__main__":
+    dirs = sys.argv[1:]
+    d=daemontoolsctl(dirs)
+
+    if not sys.stdin.isatty():
+        d.prompt=''
+    d.cmdloop()
