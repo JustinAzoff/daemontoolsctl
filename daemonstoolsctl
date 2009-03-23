@@ -175,4 +175,6 @@ if __name__ == "__main__":
 
     if not sys.stdin.isatty():
         d.prompt=''
+    else:
+        d.onecmd("status")
     d.cmdloop()
