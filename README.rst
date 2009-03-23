@@ -10,6 +10,7 @@ I have svscan running on 3 dummy services in /tmp/procs.
 
 On startup, daemonstoolsctl automatically runs svstat::
 
+    justin@latitude:~$ daemonstoolsctl /tmp/procs/
     /tmp/procs/app3: up (pid 23269) 23 seconds
     /tmp/procs/program2: up (pid 23234) 44 seconds
     /tmp/procs/program1: up (pid 23226) 48 seconds
