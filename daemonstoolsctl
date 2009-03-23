@@ -62,8 +62,7 @@ class daemontoolsctl(cmd.Cmd):
         #print ">%s< >%s< >%s< >%s<" % (text, line, begidx, endidx)
         return [s for (d,s) in self.get_services(text)]
 
-    complete_status = complete_service
-        
+    completedefault = complete_service
 
     def do_status(self, line):
         """Usage: status <services>"""
