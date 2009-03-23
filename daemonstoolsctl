@@ -7,15 +7,6 @@ import subprocess
 import sys
 import time
 
-def svstat(d, s):
-    path = os.path.join(d,s)
-    return subprocess.Popen(['svstat', path]).wait()
-
-def svc(d, s, opt):
-    path = os.path.join(d,s)
-    opt = opt_mapping[opt] 
-    return subprocess.Popen(['svc', opt, path]).wait()
-
 opt_mapping = {
     'start':    '-u',
     'stop':     '-d',
@@ -28,6 +19,26 @@ opt_mapping = {
     'terminate':'-t',
     'kill':     '-k',
 }
+
+def svstat(d, s):
+    path = os.path.join(d,s)
+    return subprocess.Popen(['svstat', path]).wait()
+
+def svc(d, s, opt):
+    path = os.path.join(d,s)
+    opt = opt_mapping[opt] 
+    return subprocess.Popen(['svc', opt, path]).wait()
+
+def down(d,s):
+    path = os.path.join(d,s,'down')
+    f = open(path,'w')
+    f.write("Stopped on %s\n" % time.ctime())
+    f.close()
+
+def up(d,s):
+    path = os.path.join(d,s,'down')
+    if os.path.exists(path):
+        os.unlink(path)
 
 class daemontoolsctl(cmd.Cmd):
     prompt = 'daemontoolsctl> '
@@ -91,8 +102,6 @@ class daemontoolsctl(cmd.Cmd):
 
         self.svc_helper(line, 'stop')
         time.sleep(1)
-        self.svc_helper(line, 'kill')
-        time.sleep(1)
         self.svc_helper(line, 'start')
 
 #def gen():
@@ -134,6 +143,28 @@ class daemontoolsctl(cmd.Cmd):
     def do_kill(self, line):
         """Usage: kill <services>"""
         self.svc_helper(line, 'kill')
+
+
+    def do_down(self, line):
+        """Usage: down <services>
+        Prevent services from being automatically started
+        does not stop currently running services
+        """
+        for l in line.split():
+            services = self.get_services(l)
+            for d,s in services:
+                print "preventing service '%s' from being started" % s
+                down(d,s)
+
+    def do_up(self, line):
+        """Usage: up <services>
+        Unblock a service that was prevented from being started by using 'down'
+        """
+        for l in line.split():
+            services = self.get_services(l)
+            for d,s in services:
+                print "service '%s' no longer prevented from being started" % s
+                up(d,s)
 
     def do_EOF(self, x):
         sys.exit(0)
