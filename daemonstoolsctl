@@ -170,6 +170,10 @@ class daemontoolsctl(cmd.Cmd):
         
 if __name__ == "__main__":
     dirs = sys.argv[1:]
+    if not dirs:
+        print "Usage: %s /path/to/service/directory [/path/to/another/services/directory]" % sys.argv[0]
+        sys.exit(1)
+
     d=daemontoolsctl(dirs)
 
     if not sys.stdin.isatty():
